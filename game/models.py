@@ -30,7 +30,7 @@ class Game(models.Model):
     title = models.CharField(max_length=255)
     release_date = models.DateField()
     description = models.TextField()
-    average_rating = models.FloatField(validators=[MinValueValidator(1.0), MaxValueValidator(10.0)])
+    average_rating = models.FloatField(null=True, validators=[MinValueValidator(1.0), MaxValueValidator(10.0)])
 
     publisher = models.ForeignKey(Publisher, on_delete=models.RESTRICT, related_name='games')
     developer = models.ForeignKey(Developer, on_delete=models.RESTRICT, related_name='games')

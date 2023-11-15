@@ -21,13 +21,13 @@ class DeveloperSerializer(serializers.ModelSerializer):
 class GameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
-        fields = ['id', 'title', 'release_date', 'publisher', 'developer', 'platforms', 'description']
+        fields = ['id', 'title', 'release_date', 'publisher', 'developer', 'description']
 
-    # publisher = serializers.HyperlinkedRelatedField(
-    #     queryset=Publisher.objects.all(),
-    #     view_name='publisher-detail'
-    # )
-    # developer = serializers.HyperlinkedRelatedField(
-    #     queryset=Developer.objects.all(),
-    #     view_name='developer-detail'
-    # )
+    publisher = serializers.HyperlinkedRelatedField(
+        queryset=Publisher.objects.all(),
+        view_name='publisher-detail'
+    )
+    developer = serializers.HyperlinkedRelatedField(
+        queryset=Developer.objects.all(),
+        view_name='developer-detail'
+    )
