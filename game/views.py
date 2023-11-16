@@ -9,8 +9,8 @@ from rest_framework import status, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .filters import ReviewFilter
-from .models import Game, Publisher, Developer, Review, Audience, Wishlist
-from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer, WishlistSerializer
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform
+from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer, WishlistSerializer, PlatformSerializer
 from .permissions import IsAdminOrReadOnly, IsOwnerOrAdmin, IsReadAndUpdateAndDelete
 
 
@@ -87,6 +87,21 @@ class DeveloperViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
     
 
+class PlatformViewSet(viewsets.ModelViewSet):
+    queryset = Platform.objects.annotate(games_count=Count('game')).all()
+    serializer_class = PlatformSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def destroy(self, request, *args, **kwargs):
+        if Game.objects.filter(publisher=kwargs['pk']).count() > 0:
+            return Response(
+                {'error': 'Platform can not be deleted because it is associated with one or more games.'}, 
+                status=status.HTTP_405_METHOD_NOT_ALLOWED
+            )
+
+        return super().destroy(request, *args, **kwargs)
+    
+
 class AudienceViewSet(viewsets.ModelViewSet):
     queryset = Audience.objects.all()
     serializer_class = AudienceSerializer
@@ -119,4 +134,4 @@ class WishListViewSet(viewsets.ModelViewSet):
         if self.request.user.is_authenticated:
             audience = Audience.objects.get(user_id=self.request.user.id)
         else: audience = None
-        return {'user': audience}
+        return {'user': audience, 'request': self.request}

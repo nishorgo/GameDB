@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Game, Publisher, Developer, Review, Audience, Wishlist
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform
 
 
 class PublisherSerializer(serializers.ModelSerializer):
@@ -52,7 +52,12 @@ class AudienceSerializer(serializers.ModelSerializer):
 
 
 class WishlistSerializer(serializers.ModelSerializer):
-    game = serializers.PrimaryKeyRelatedField(queryset=Game.objects.all())
+    # game = serializers.PrimaryKeyRelatedField(queryset=Game.objects.all())
+
+    game = serializers.HyperlinkedRelatedField(
+        queryset=Publisher.objects.all(),
+        view_name='games-detail'
+    )
 
     class Meta:
         model = Wishlist
@@ -61,4 +66,13 @@ class WishlistSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context.get('user')
         return Wishlist.objects.create(user=user, **validated_data)
+    
+
+class PlatformSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Platform
+        fields = ['id', 'name', 'owner', 'games_count', 'launch_date']
+
+    games_count = serializers.IntegerField(read_only=True)
+
          

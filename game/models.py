@@ -27,6 +27,7 @@ class Developer(models.Model):
 
 class Platform(models.Model):
     name = models.CharField(max_length=255)
+    owner = models.CharField(max_length=255, null=True)
     launch_date = models.DateField(null=True, blank=True)
 
     class Meta:
