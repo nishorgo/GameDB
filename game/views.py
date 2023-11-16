@@ -1,57 +1,62 @@
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
-from rest_framework import generics
+
+from rest_framework.decorators import action
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.pagination import PageNumberPagination
 from rest_framework import status, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .filters import ReviewFilter
-from .models import Game, Publisher, Developer, Review
-from .serializers import GameListSerializer, GameDetailSerializer, PublisherSerializer, DeveloperSerializer, ReviewListSerializer, ReviewDetailSerializer
+from .models import Game, Publisher, Developer, Review, Audience
+from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer
+from .permissions import IsAdminOrReadOnly, IsReviewOwnerOrAdmin, IsReadAndUpdateAndDelete
 
 
-class GameList(generics.ListAPIView):
-    queryset = Game.objects.all()
-    serializer_class = GameListSerializer
+class GameViewSet(viewsets.ModelViewSet):
+    queryset = Game.objects.select_related('publisher', 'developer').all()
+    serializer_class = GameSerializer
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['publisher_id', 'developer_id']
     search_fields = ['title', 'description']
-    ordering_fields = ['title', 'rating', 'release_date']
+    ordering_fields = ['title', 'average_rating', 'release_date']
 
     def get_serializer_context(self):
         return {'request': self.request}
     
 
-class GameCreate(generics.CreateAPIView):
-    serializer_class = GameDetailSerializer
-    
-
-class GameDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Game.objects.select_related('publisher', 'developer').all()
-    serializer_class = GameDetailSerializer
-
-
-class ReviewList(generics.ListCreateAPIView):
-    serializer_class = ReviewListSerializer
+class ReviewViewset(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ReviewFilter
-    ordering_fields = ['title', 'rating', 'release_date']
-
+    ordering_fields = ['rating', 'timestamp']
+    
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated(), IsReviewOwnerOrAdmin()]
 
     def get_queryset(self):
-        return Review.objects.filter(game_id=self.kwargs['pk'])
+        return Review.objects.filter(game_id=self.kwargs.get('game_pk'))
     
     def get_serializer_context(self):
-        return {'game_id': self.kwargs['pk']}
+        if self.request.user.is_authenticated:
+            audience = Audience.objects.get(user_id=self.request.user.id)
+        else: audience = None
+        return {'game_id': self.kwargs.get('game_pk'), 'user': audience}
     
 
-class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Review.objects.all()
-    serializer_class = ReviewListSerializer
-    lookup_url_kwarg = 'review'
+class AudienceReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    filter_backends = [OrderingFilter]
+    ordering_fields = ['rating', 'timestamp']
+    permission_classes = [IsReadAndUpdateAndDelete]
     
+    def get_queryset(self):
+        audience = get_object_or_404(Audience, user_id=self.request.user.id)
+        return Review.objects.filter(user=audience)
 
 
 class PublisherViewSet(viewsets.ModelViewSet):
@@ -81,3 +86,23 @@ class DeveloperViewSet(viewsets.ModelViewSet):
         
         return super().destroy(request, *args, **kwargs)
     
+
+class AudienceViewSet(viewsets.ModelViewSet):
+    queryset = Audience.objects.all()
+    serializer_class = AudienceSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    @action(detail=False, methods=['GET', 'PUT'], permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+         
+        audience = Audience.objects.get(user_id=request.user.id)
+        if request.method == 'GET':
+            serializer = AudienceSerializer(audience)
+            return Response(serializer.data)
+        elif request.method == 'PUT':
+            serializer = AudienceSerializer(audience, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)

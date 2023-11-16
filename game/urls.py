@@ -4,14 +4,17 @@ from . import views
 
 
 router = routers.DefaultRouter()
+router.register('games', views.GameViewSet, basename='games')
 router.register('publishers', views.PublisherViewSet)
 router.register('developers', views.DeveloperViewSet)
+router.register('audience', views.AudienceViewSet)
+router.register('my-reviews', views.AudienceReviewViewSet, basename='my-reviews')
+
+game_router = routers.NestedDefaultRouter(router, 'games', lookup='game')
+game_router.register('reviews', views.ReviewViewset, basename='game-reviews')
 
 
 urlpatterns = [
-    path('games/', views.GameList.as_view()),
-    path('games/create/', views.GameCreate.as_view()),
-    path('games/<int:pk>/', views.GameDetail.as_view()),
-    path('games/<int:pk>/reviews/', views.ReviewList.as_view()),
-    path('games/<int:pk>/reviews/<int:review>/', views.ReviewDetail.as_view()),
-] + router.urls
+    path('', include(router.urls)),
+    path('', include(game_router.urls))
+]

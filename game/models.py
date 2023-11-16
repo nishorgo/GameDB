@@ -62,16 +62,17 @@ class GamePlatform(models.Model):
         return self.game.title + ' - ' + self.platform.name
     
 
-# class Audience(models.Model):
-#     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-#     birth_date = models.DateField(null=True, blank=True)
+class Audience(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    birth_date = models.DateField(null=True, blank=True)
 
-#     def __str__(self):
-#         return f'{self.user.first_name}'
+    def __str__(self):
+        return f'{self.user.first_name}'
 
 
 class Review(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(Audience, on_delete=models.SET_NULL, null=True, related_name='reviews')
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)])
     review_title = models.CharField(max_length=255)
     review_body = models.TextField()
