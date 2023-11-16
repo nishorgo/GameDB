@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Game, Publisher, Developer, Review, Audience
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist
 
 
 class PublisherSerializer(serializers.ModelSerializer):
@@ -49,4 +49,16 @@ class AudienceSerializer(serializers.ModelSerializer):
         model = Audience
         fields = ['id', 'user', 'birth_date']
         read_only_fields = ['user']
+
+
+class WishlistSerializer(serializers.ModelSerializer):
+    game = serializers.PrimaryKeyRelatedField(queryset=Game.objects.all())
+
+    class Meta:
+        model = Wishlist
+        fields = ['id', 'game', 'timestamp']
+
+    def create(self, validated_data):
+        user = self.context.get('user')
+        return Wishlist.objects.create(user=user, **validated_data)
          

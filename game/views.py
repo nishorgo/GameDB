@@ -9,9 +9,9 @@ from rest_framework import status, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .filters import ReviewFilter
-from .models import Game, Publisher, Developer, Review, Audience
-from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer
-from .permissions import IsAdminOrReadOnly, IsReviewOwnerOrAdmin, IsReadAndUpdateAndDelete
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist
+from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer, WishlistSerializer
+from .permissions import IsAdminOrReadOnly, IsOwnerOrAdmin, IsReadAndUpdateAndDelete
 
 
 class GameViewSet(viewsets.ModelViewSet):
@@ -36,7 +36,7 @@ class ReviewViewset(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.request.method in permissions.SAFE_METHODS:
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated(), IsReviewOwnerOrAdmin()]
+        return [permissions.IsAuthenticated(), IsOwnerOrAdmin()]
 
     def get_queryset(self):
         return Review.objects.filter(game_id=self.kwargs.get('game_pk'))
@@ -106,3 +106,17 @@ class AudienceViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+        
+
+class WishListViewSet(viewsets.ModelViewSet):
+    serializer_class = WishlistSerializer
+
+    def get_queryset(self):
+        audience = get_object_or_404(Audience, user_id=self.request.user.id)
+        return Wishlist.objects.filter(user=audience).select_related('game')
+    
+    def get_serializer_context(self):
+        if self.request.user.is_authenticated:
+            audience = Audience.objects.get(user_id=self.request.user.id)
+        else: audience = None
+        return {'user': audience}

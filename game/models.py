@@ -85,7 +85,7 @@ class Review(models.Model):
         return self.review_title
 
 
-# # class Wishlist(models.Model):
-# #     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-# #     game = models.ForeignKey(Game, on_delete=models.CASCADE)
-# #     timestamp = models.DateTimeField(auto_now_add=True)
+class Wishlist(models.Model):
+    user = models.ForeignKey(Audience, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='wishlists')
+    timestamp = models.DateTimeField(auto_now_add=True)

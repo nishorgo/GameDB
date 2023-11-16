@@ -8,7 +8,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return True
         return bool(request.user and request.user.is_staff)
     
-class IsReviewOwnerOrAdmin(permissions.BasePermission):
+class IsOwnerOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         audience = Audience.objects.get(user_id=request.user.id)
         return obj.user == audience or request.user.is_staff

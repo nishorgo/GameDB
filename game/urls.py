@@ -8,6 +8,7 @@ router.register('games', views.GameViewSet, basename='games')
 router.register('publishers', views.PublisherViewSet)
 router.register('developers', views.DeveloperViewSet)
 router.register('audience', views.AudienceViewSet)
+router.register('wishlist', views.WishListViewSet, basename='wishlist')
 router.register('my-reviews', views.AudienceReviewViewSet, basename='my-reviews')
 
 game_router = routers.NestedDefaultRouter(router, 'games', lookup='game')
