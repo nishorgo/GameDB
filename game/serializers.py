@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform, Genre
 
 
 class PublisherSerializer(serializers.ModelSerializer):
@@ -16,12 +16,28 @@ class DeveloperSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'country', 'games_count']
 
     games_count = serializers.IntegerField(read_only=True)
-    
+
+
+class PlatformSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Platform
+        fields = ['id', 'name', 'owner', 'games_count', 'launch_date']
+
+    games_count = serializers.IntegerField(read_only=True)
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ['id', 'name', 'description', 'origin_date']
+
 
 class GameSerializer(serializers.ModelSerializer):
+    platforms = serializers.PrimaryKeyRelatedField(queryset=Platform.objects.all(), many=True)
+    genres = serializers.PrimaryKeyRelatedField(queryset=Genre.objects.all(), many=True)
     class Meta:
         model = Game
-        fields = ['id', 'title', 'release_date', 'publisher', 'developer', 'description']
+        fields = ['id', 'title', 'release_date', 'publisher', 'developer', 'platforms', 'genres', 'description']
 
     publisher = serializers.HyperlinkedRelatedField(
         queryset=Publisher.objects.all(),
@@ -31,6 +47,7 @@ class GameSerializer(serializers.ModelSerializer):
         queryset=Developer.objects.all(),
         view_name='developer-detail'
     )
+
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -68,11 +85,4 @@ class WishlistSerializer(serializers.ModelSerializer):
         return Wishlist.objects.create(user=user, **validated_data)
     
 
-class PlatformSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Platform
-        fields = ['id', 'name', 'owner', 'games_count', 'launch_date']
 
-    games_count = serializers.IntegerField(read_only=True)
-
-         

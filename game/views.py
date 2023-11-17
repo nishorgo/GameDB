@@ -9,17 +9,17 @@ from rest_framework import status, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .filters import ReviewFilter
-from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform
-from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer, WishlistSerializer, PlatformSerializer
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform, Genre
+from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer, WishlistSerializer, PlatformSerializer, GenreSerializer
 from .permissions import IsAdminOrReadOnly, IsOwnerOrAdmin, IsReadAndUpdateAndDelete
 
 
 class GameViewSet(viewsets.ModelViewSet):
-    queryset = Game.objects.select_related('publisher', 'developer').all()
+    queryset = Game.objects.prefetch_related('publisher', 'developer', 'genres', 'platforms').all()
     serializer_class = GameSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['publisher_id', 'developer_id']
+    filterset_fields = ['publisher_id', 'developer_id', 'platforms', 'genres']
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'average_rating', 'release_date']
 
@@ -86,11 +86,12 @@ class DeveloperViewSet(viewsets.ModelViewSet):
         
         return super().destroy(request, *args, **kwargs)
     
+    
 
 class PlatformViewSet(viewsets.ModelViewSet):
     queryset = Platform.objects.annotate(games_count=Count('game')).all()
     serializer_class = PlatformSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminOrReadOnly]
 
     def destroy(self, request, *args, **kwargs):
         if Game.objects.filter(publisher=kwargs['pk']).count() > 0:
@@ -100,6 +101,11 @@ class PlatformViewSet(viewsets.ModelViewSet):
             )
 
         return super().destroy(request, *args, **kwargs)
+    
+class GenreViewSet(viewsets.ModelViewSet):
+    queryset = Genre.objects.annotate(games_count=Count('game')).all()
+    serializer_class = GenreSerializer
+    permission_classes = [IsAdminOrReadOnly]
     
 
 class AudienceViewSet(viewsets.ModelViewSet):

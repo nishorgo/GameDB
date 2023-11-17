@@ -35,6 +35,18 @@ class Platform(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+class Genre(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True)
+    origin_date = models.DateField(null=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
 
 
 class Game(models.Model):
@@ -47,6 +59,7 @@ class Game(models.Model):
     developer = models.ForeignKey(Developer, on_delete=models.RESTRICT, related_name='games')
 
     platforms = models.ManyToManyField(Platform, through='GamePlatform')
+    genres = models.ManyToManyField(Genre, through='GameGenre')
 
     class Meta:
         ordering = ['-release_date']
@@ -61,6 +74,13 @@ class GamePlatform(models.Model):
 
     def __str__(self):
         return self.game.title + ' - ' + self.platform.name
+    
+class GameGenre(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    genre = models.ForeignKey(Genre, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.game.title + ' - ' + self.genre.name
     
 
 class Audience(models.Model):

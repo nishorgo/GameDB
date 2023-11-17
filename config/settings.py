@@ -40,8 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_filters',
     'rest_framework',
+    'generic_relations',
     'djoser',
     'debug_toolbar',
+    'core',
     'game',
 ]
 
