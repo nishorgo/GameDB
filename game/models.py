@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from .validators import validate_file_size
+
 
 class Publisher(models.Model):
     name = models.CharField(max_length=255)
@@ -66,6 +68,11 @@ class Game(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+class GameImage(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='game/images', validators=[validate_file_size])
 
 
 class GamePlatform(models.Model):

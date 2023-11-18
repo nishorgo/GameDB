@@ -13,8 +13,15 @@ django-filter = "*"
 djoser = "*"
 djangorestframework-simplejwt = "*"
 rest-framework-generic-relations = "*"
+pillow = "*"
+redis = "*"
+celery = "*"
+flower = "*"
+django-redis = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-django = "*"
 
 [requires]
 python_version = "3.11"

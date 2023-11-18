@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform, Genre
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform, Genre, GameImage
 
 
 class PublisherSerializer(serializers.ModelSerializer):
@@ -32,12 +32,24 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'origin_date']
 
 
+class GameImageSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        game_id = self.context['game_id']
+        return GameImage.objects.create(game_id=game_id, **validated_data)
+
+    class Meta:
+        model = GameImage
+        fields = ['id', 'image']
+
+
+
 class GameSerializer(serializers.ModelSerializer):
     platforms = serializers.PrimaryKeyRelatedField(queryset=Platform.objects.all(), many=True)
     genres = serializers.PrimaryKeyRelatedField(queryset=Genre.objects.all(), many=True)
+    images = GameImageSerializer(many=True, read_only=True)
     class Meta:
         model = Game
-        fields = ['id', 'title', 'release_date', 'publisher', 'developer', 'platforms', 'genres', 'description']
+        fields = ['id', 'title', 'release_date', 'publisher', 'developer', 'platforms', 'genres', 'images', 'description']
 
     publisher = serializers.HyperlinkedRelatedField(
         queryset=Publisher.objects.all(),

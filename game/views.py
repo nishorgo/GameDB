@@ -6,25 +6,42 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status, viewsets
+
 from django_filters.rest_framework import DjangoFilterBackend
+from django.views.decorators.cache import cache_page
 
 from .filters import ReviewFilter
-from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform, Genre
-from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer, WishlistSerializer, PlatformSerializer, GenreSerializer
+from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform, Genre, GameImage
+from .serializers import GameSerializer, PublisherSerializer, DeveloperSerializer, ReviewSerializer, AudienceSerializer, WishlistSerializer, PlatformSerializer, GenreSerializer, GameImageSerializer
 from .permissions import IsAdminOrReadOnly, IsOwnerOrAdmin, IsReadAndUpdateAndDelete
 
 
 class GameViewSet(viewsets.ModelViewSet):
-    queryset = Game.objects.prefetch_related('publisher', 'developer', 'genres', 'platforms').all()
+    queryset = Game.objects.prefetch_related('publisher', 'developer', 'genres', 'platforms', 'images').all()
     serializer_class = GameSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['publisher_id', 'developer_id', 'platforms', 'genres']
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'average_rating', 'release_date']
 
+    @classmethod
+    @cache_page(60 * 60)
+    def as_view(cls, *args, **kwargs):
+        return super().as_view(*args, **kwargs)
+
     def get_serializer_context(self):
         return {'request': self.request}
+    
+
+class GameImageViewSet(viewsets.ModelViewSet):
+    serializer_class = GameImageSerializer
+
+    def get_serializer_context(self):
+        return {'game_id': self.kwargs['game_pk']}
+
+    def get_queryset(self):
+        return GameImage.objects.filter(game_id=self.kwargs['game_pk'])
     
 
 class ReviewViewset(viewsets.ModelViewSet):
@@ -62,6 +79,7 @@ class AudienceReviewViewSet(viewsets.ModelViewSet):
 class PublisherViewSet(viewsets.ModelViewSet):
     queryset = Publisher.objects.annotate(games_count=Count('games')).all()
     serializer_class = PublisherSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
     def destroy(self, request, *args, **kwargs):
         if Game.objects.filter(publisher=kwargs['pk']).count() > 0:
@@ -76,6 +94,8 @@ class PublisherViewSet(viewsets.ModelViewSet):
 class DeveloperViewSet(viewsets.ModelViewSet):
     queryset = Developer.objects.annotate(games_count=Count('games')).all()
     serializer_class = DeveloperSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
 
     def destroy(self, request, *args, **kwargs):
         if Game.objects.filter(developer=kwargs['pk']).count() > 0:
@@ -131,6 +151,8 @@ class AudienceViewSet(viewsets.ModelViewSet):
 
 class WishListViewSet(viewsets.ModelViewSet):
     serializer_class = WishlistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
 
     def get_queryset(self):
         audience = get_object_or_404(Audience, user_id=self.request.user.id)
