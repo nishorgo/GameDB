@@ -8,7 +8,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status, viewsets
 
 from django_filters.rest_framework import DjangoFilterBackend
-from django.views.decorators.cache import cache_page
+from django.utils.functional import cached_property
 
 from .filters import ReviewFilter
 from .models import Game, Publisher, Developer, Review, Audience, Wishlist, Platform, Genre, GameImage
@@ -25,10 +25,13 @@ class GameViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'average_rating', 'release_date']
 
-    @classmethod
-    @cache_page(60 * 60)
-    def as_view(cls, *args, **kwargs):
-        return super().as_view(*args, **kwargs)
+    @cached_property
+    def cached_queryset(self):
+        return Game.objects.prefetch_related('publisher', 'developer', 'genres', 'platforms', 'images').all()
+
+    @property
+    def queryset(self):
+        return self.cached_queryset
 
     def get_serializer_context(self):
         return {'request': self.request}
