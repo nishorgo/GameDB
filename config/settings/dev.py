@@ -7,7 +7,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'gamedb',
-        'HOST': 'mysql',
+        'HOST': 'localhost',
         'USER': 'root',
         'PASSWORD': 'P@ssword'
     }

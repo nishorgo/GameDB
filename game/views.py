@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count
 
 from rest_framework.decorators import action
-from rest_framework import generics, permissions
+from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status, viewsets
@@ -63,7 +63,7 @@ class ReviewViewset(viewsets.ModelViewSet):
     
     def get_serializer_context(self):
         if self.request.user.is_authenticated:
-            audience = Audience.objects.get(user_id=self.request.user.id)
+            audience = self.request.user.audience
         else: audience = None
         return {'game_id': self.kwargs.get('game_pk'), 'user': audience}
     
@@ -75,7 +75,7 @@ class AudienceReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [IsReadAndUpdateAndDelete]
     
     def get_queryset(self):
-        audience = get_object_or_404(Audience, user_id=self.request.user.id)
+        audience = self.request.user.audience
         return Review.objects.filter(user=audience)
 
 
@@ -156,13 +156,11 @@ class WishListViewSet(viewsets.ModelViewSet):
     serializer_class = WishlistSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-
     def get_queryset(self):
-        audience = get_object_or_404(Audience, user_id=self.request.user.id)
-        return Wishlist.objects.filter(user=audience).select_related('game')
+        return Wishlist.objects.filter(user__user=self.request.user).prefetch_related('game')
     
     def get_serializer_context(self):
+        context = {'request': self.request}
         if self.request.user.is_authenticated:
-            audience = Audience.objects.get(user_id=self.request.user.id)
-        else: audience = None
-        return {'user': audience, 'request': self.request}
+            context['user'] = self.request.user
+        return context
